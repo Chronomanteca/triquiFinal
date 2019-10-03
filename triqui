@@ -1,0 +1,1886 @@
+#Triqui en mips
+#Registros usados: 
+#	t1, t2, t3, t4, t5, t6, t7, t8, t9:  almacenan 1 para el jugador con X y 2 para el jugador con 0
+#	s1 almacena la cadena que imprime el tablero
+#	s2 almacena la cadena que imprime el mensaje de pedir movimiento
+#	s3 almacena la cadena de victoria
+#	k0 temporal
+#	k1 almacena la opcion seleccionada en menu
+#	a1 almacena el llamado a cls que reemplaza la posicion indicada por la instruccion lb con un espacio para limpiar el tablero
+#	tambien reemplaza la cadena con el jugador determinado dependiendo del turno
+
+#	s0 contador de turnos, t0 lo divide en 2 para ver si es par (x) o impar (O)
+#	s5 contador de empate, una vez llega a 9 sin que ningun jugador gane, se declara un empate
+#	
+
+
+.text
+			.globl main
+main:
+			li $t1, 0
+			li $t2, 0
+			li $t3, 0
+			li $t4, 0
+			li $t5, 0
+			li $t6, 0
+			li $t7, 0
+			li $t8, 0
+			li $t9, 0
+
+			li $s0, 0
+			li $s5, 0
+			li $k0, 0
+
+			la $s1, tablero
+			la $s2, pedirMovimiento
+			la $s3, gano
+
+			lb $a1, cls
+			
+			sb $a1, 14($s1)
+			sb $a1, 18($s1)
+			sb $a1, 22($s1)
+			sb $a1, 40($s1)
+			sb $a1, 44($s1)
+			sb $a1, 48($s1)
+			sb $a1, 66($s1)
+			sb $a1, 70($s1)
+			sb $a1, 74($s1)
+			
+#dependiendo en la eleccion del jugador, o termina la partida, o juega contra la cpu u otro jugador		
+Menu:
+			li $v0,4
+			la $a0,menu
+			syscall
+			
+			li $v0,5
+			syscall
+			
+			move $k1, $v0
+			
+			beq $v0,1, imprimirTablero	
+			beq $v0,2, imprimirTableroCPU	
+			beq $v0,3, terminarJuego
+	
+	
+#Imprime la cadena tablero, con cada iteracion, añade 1 a los contadores $s0, y $s5
+imprimirTablero:
+			li $v0, 4
+			la $a0, salto
+			syscall
+			
+			li $v0, 4
+			la $a0, tablero
+			syscall
+
+			beq $s5, 9, Empatados
+
+			add $s5, $s5, 1
+
+			rem $t0, $s0, 2
+			add $s0, $s0, 1
+			bnez $t0, jug0			
+
+#Añade "x" a la cadena pedir movimiento, y a la cadena de ganador
+jugX:
+			lb $a1, x
+			sb $a1, 8($s2)
+			sb $a1, 9($s3)
+			j jugar
+			
+#Lo mismo que jugX pero añade "O" en vez de "x"
+jug0:
+			lb $a1, o
+			sb $a1, 8($s2)
+			sb $a1, 9($s3)
+			
+
+#Recibe la posicion en la que se posicionara una "x" o un "O", tambien llama a la instruccion mov invalido y ocupado
+jugar:
+			li $v0, 4
+			la $a0, pedirMovimiento
+			syscall
+
+			li $v0, 5
+			syscall
+			move $s6, $v0
+
+			beq $s6, 11, J11
+			beq $s6, 21, J21
+			beq $s6, 31, J31
+			beq $s6, 12, J12
+			beq $s6, 22, J22
+			beq $s6, 32, J32
+			beq $s6, 13, J13
+			beq $s6, 23, J23
+			beq $s6, 33, J33
+
+			li $v0, 4
+			la $a0, movInvalido
+			syscall
+			j jugar
+
+#de J11 a J33 mediante el contador $s0 pone o una X o un O en el tablero, verifica si se cumple una condicion de victoria o si esta ocupada la casilla
+
+J11:
+			bnez $t1, ocupado
+			bnez $t0, O11
+
+			X11:
+			li $t1, 1
+			sb $a1, 14($s1)
+			j verificarVictoria
+
+			O11:
+			li $t1, 2
+			sb $a1, 14($s1)
+			j verificarVictoria
+
+J21:
+			bnez $t2, ocupado
+			bnez $t0, O21
+
+			X21:
+			li $t2, 1
+			sb $a1, 18($s1)
+			j verificarVictoria
+
+			O21:
+			li $t2, 2
+			sb $a1, 18($s1)
+			j verificarVictoria
+
+J31:
+			bnez $t3, ocupado
+			bnez $t0, O31
+
+			X31:
+			li $t3, 1
+			sb $a1, 22($s1)
+			j verificarVictoria
+
+			O31:
+			li $t3, 2
+			sb $a1, 22($s1)
+			j verificarVictoria
+
+J12:
+			bnez $t4, ocupado
+			bnez $t0, O12
+
+			X12:
+			li $t4, 1
+			sb $a1, 40($s1)
+			j verificarVictoria
+
+			O12:
+			li $t4, 2
+			sb $a1, 40($s1)
+			j verificarVictoria
+
+J22:
+			bnez $t5, ocupado
+			bnez $t0, O22
+
+			X22:
+			li $t5, 1
+			sb $a1, 44($s1)
+			j verificarVictoria
+
+			O22:
+			li $t5, 2
+			sb $a1, 44($s1)
+			j verificarVictoria
+
+J32:
+			bnez $t6, ocupado
+			bnez $t0, O32
+
+			X32:
+			li $t6, 1
+			sb $a1, 48($s1)
+			j verificarVictoria
+
+			O32:
+			li $t6, 2
+			sb $a1, 48($s1)
+			j verificarVictoria
+
+J13:
+			bnez $t7, ocupado
+			bnez $t0, O13
+
+			X13:
+			li $t7, 1
+			sb $a1, 66($s1)
+			j verificarVictoria
+
+			O13:
+			li $t7, 2
+			sb $a1, 66($s1)
+			j verificarVictoria
+
+J23:
+			bnez $t8, ocupado
+			bnez $t0, O23
+
+			X23:
+			li $t8, 1
+			sb $a1, 70($s1)
+			j verificarVictoria
+
+			O23:
+			li $t8, 2
+			sb $a1, 70($s1)
+			j verificarVictoria
+
+J33:
+			bnez $t9, ocupado
+			bnez $t0, O33
+
+			X33:
+			li $t9, 1
+			sb $a1, 74($s1)
+			j verificarVictoria
+
+			O33:
+			li $t9, 2
+			sb $a1, 74($s1)
+			j verificarVictoria
+
+#Imprime la cadeja espacioOcupado, y retorna a la instruccion jugar para que el jugador rectifique su opcion
+ocupado:
+			li $v0, 4
+			la $a0, espacioOcupado
+			syscall
+			j jugar
+
+#verifica si 3 X o 3 O estan en linea para definir un ganador, si se esta jugando contra la cpu, se usa el temporal k1, que almacena el valor en s0 para cambiar al turno de la CPU
+verificarVictoria:
+			and $s7, $t1, $t2
+			and $s7, $s7, $t3
+			bnez $s7, victoria
+
+			and $s7, $t4, $t5
+			and $s7, $s7, $t6
+			bnez $s7, victoria
+
+			and $s7, $t7, $t8
+			and $s7, $s7, $t9
+			bnez $s7, victoria
+
+			and $s7, $t1, $t4
+			and $s7, $s7, $t7
+			bnez $s7, victoria
+
+			and $s7, $t2, $t5
+			and $s7, $s7, $t8
+			bnez $s7, victoria
+
+			and $s7, $t3, $t6
+			and $s7, $s7, $t9
+			bnez $s7, victoria
+
+			and $s7, $t1, $t5
+			and $s7, $s7, $t9
+			bnez $s7, victoria
+
+			and $s7, $t7, $t5
+			and $s7, $s7, $t3
+			bnez $s7, victoria
+			beq $k1, 1, imprimirTablero
+			beq $k1, 2, imprimirTableroCPU
+
+#Solo imprime quien gano
+victoria:
+			li $v0, 4
+			la $a0, tablero
+			syscall
+
+			li $v0, 4
+			la $a0, gano
+			syscall
+			j nuevoJuego
+
+#Solo imprime que se llego a un empate
+Empatados:
+			li $v0, 4
+			la $a0, empate
+			syscall
+#retorna al inicio del juego
+nuevoJuego:			
+			j main
+			
+
+#Finaliza la partida	
+terminarJuego:
+			li $v0, 4
+			la $a0, adios
+			syscall
+			
+			li $v0, 10
+			syscall
+			
+#Hace lo mismo que imprimir tablero cpu, solo que en vez de llamar a jugar, llama a las instrucciones de partida para la cpu
+imprimirTableroCPU:
+  li $v0, 4
+  la $a0, tablero
+  syscall
+
+  beq $s5, 9, Empatados
+
+  add $s5, $s5, 1
+
+  rem $t0, $s0, 2
+  add $s0, $s0, 1
+ 
+  bnez $t0, jug0CPU
+
+#Lo mismo que jugX pero enfocado a la CPU
+jugXCPU:
+  lb $a1, x
+  sb $a1, 8($s2)
+  sb $a1, 9($s3)
+  j jugarCPU
+  
+#lo mismo que jug0 pero para la CPU
+jug0CPU:
+  lb $a1, o
+  sb $a1, 8($s2)
+  sb $a1, 9($s3)
+
+#a diferencia de jugar, enlaza a la instruccion puente que usanto el temporal k1, decide si es el turno del jugador o de la CPU
+jugarCPU:
+  jal puente
+ 
+  move $s6, $v0
+
+  beq $s6, 11, J11
+  beq $s6, 21, J21
+  beq $s6, 31, J31
+  beq $s6, 12, J12
+  beq $s6, 22, J22
+  beq $s6, 32, J32
+  beq $s6, 13, J13
+  beq $s6, 23, J23
+  beq $s6, 33, J33
+
+  li $v0, 4
+  la $a0, movInvalido
+  syscall
+  j jugarCPU
+			
+#Instruccion que define si es el turno de la CPU o del jugador		
+puente:
+ 
+			li $v0, 4
+			la $a0, salto
+			syscall
+ 
+ 
+ 
+			beqz $t0,  pedirMov
+			bnez $t0,  cpu
+
+
+#Esta instruccion es la que se encarga de determinar en que casilla se pone un "O" en base a los inputs del jugador
+cpu:
+
+			li $v0, 4
+			la $a0, turnoCPU
+			syscall
+
+ 
+			move $s6, $k0
+ 
+			beq $s6, 11, C11
+			beq $s6, 21, C21
+  			beq $s6, 31, C31
+			beq $s6, 12, C12
+			beq $s6, 22, C22
+			beq $s6, 32, C32
+			beq $s6, 13, C13
+			beq $s6, 23, C23
+			beq $s6, 33, C33
+ 
+			li $v0, 4
+			la $a0, movInvalido
+			syscall
+			j jugarCPU
+
+#Cuando es el turno del jugador, la instruccion puente llama a pedirMov para que el jugador seleccione una posicion del tablero			
+pedirMov:
+  li $v0, 4
+  la $a0, pedirMovimiento
+  syscall
+ 
+  li $v0, 5
+  syscall
+  move $k0, $v0
+  jr $ra
+ 
+
+#de C11 a C33, dependiendo de en que posiciones el jugador haya marcado el tablero, la CPU tomara la mejor opcion para o empatar, o ganar la partida
+
+#$t1
+C11:
+beqz $t5, O22
+bnez $t5, C11A
+C11A:
+and $s7, $t9, $t4
+and $s7, $s7, $t2
+and $s7, $s7, $t1
+bnez $s7, O13
+
+and $s7, $t8, $t9
+and $s7, $s7, $t3
+and $s7, $s7, $t1
+bnez $s7, O12
+
+and $s7, $t6, $t9
+and $s7, $s7, $t7
+and $s7, $s7, $t1
+bnez $s7, O21
+
+and $s7, $t6, $t7
+and $s7, $s7, $t8
+and $s7, $s7, $t1
+bnez $s7, O12
+
+and $s7, $t3, $t9
+and $s7, $s7, $t4
+and $s7, $s7, $t1
+bnez $s7, O23
+
+and $s7, $t2, $t7
+and $s7, $s7, $t6
+and $s7, $s7, $t1
+bnez $s7, O12
+
+and $s7, $t2, $t9
+and $s7, $s7, $t7
+and $s7, $s7, $t1
+bnez $s7, O12
+
+and $s7, $t2, $t8
+and $s7, $s7, $t7
+and $s7, $s7, $t1
+bnez $s7, O32
+#
+and $s7, $t9, $t7
+and $s7, $s7, $t1
+bnez $s7, O21
+
+and $s7, $t9, $t4
+and $s7, $s7, $t1
+bnez $s7, O21
+
+and $s7, $t8, $t9
+and $s7, $s7, $t1
+bnez $s7, O31
+
+and $s7, $t7, $t8
+and $s7, $s7, $t1
+bnez $s7, O12
+
+and $s7, $t6, $t9
+and $s7, $s7, $t1
+bnez $s7, O13
+
+and $s7, $t6, $t8
+and $s7, $s7, $t1
+bnez $s7, O13
+
+and $s7, $t6, $t7
+and $s7, $s7, $t1
+bnez $s7, O23
+
+and $s7, $t3, $t9
+and $s7, $s7, $t1
+bnez $s7, O12
+
+and $s7, $t4, $t6
+and $s7, $s7, $t1
+bnez $s7, O13
+
+and $s7, $t3, $t8
+and $s7, $s7, $t1
+bnez $s7, O12
+
+and $s7, $t3, $t7
+and $s7, $s7, $t1
+bnez $s7, O12
+
+and $s7, $t3, $t6
+and $s7, $s7, $t1
+bnez $s7, O21
+
+and $s7, $t2, $t7
+and $s7, $s7, $t1
+bnez $s7, O12
+
+and $s7, $t2, $t9
+and $s7, $s7, $t1
+bnez $s7, O13
+
+and $s7, $t2, $t8
+and $s7, $s7, $t1
+bnez $s7, O13
+
+and $s7, $t2, $t4
+and $s7, $s7, $t1
+bnez $s7, O13
+
+and $s7, $t2, $t6
+and $s7, $s7, $t1
+bnez $s7, O13
+
+and $s7, $t9, $t1
+bnez $s7, O32
+
+and $s7, $t8, $t1
+bnez $s7, O13
+
+and $s7, $t7, $t1
+bnez $s7, O12
+
+and $s7, $t6, $t1
+bnez $s7, O31
+
+and $s7, $t4, $t1
+bnez $s7, O13
+
+and $s7, $t2, $t1
+bnez $s7, O31
+
+
+#$t2
+C21:
+beqz $t5,O22
+bnez $t5, C21A
+C21A:
+##
+and $s7, $t5, $t9
+and $s7, $s7, $t4
+and $s7, $s7, $t2
+bnez $s7, O23
+
+and $s7, $t5, $t7
+and $s7, $s7, $t9
+and $s7, $s7, $t2
+bnez $s7, O12
+
+and $s7, $t5, $t6
+and $s7, $s7, $t7
+and $s7, $s7, $t2
+bnez $s7, O23
+
+and $s7, $t5, $t4
+and $s7, $s7, $t3
+and $s7, $s7, $t2
+bnez $s7, O23
+
+and $s7, $t8, $t7
+and $s7, $s7, $t1
+and $s7, $s7, $t2
+bnez $s7, O31
+
+and $s7, $t6, $t9
+and $s7, $s7, $t7
+and $s7, $s7, $t2
+bnez $s7, O12
+
+and $s7, $t6, $t8
+and $s7, $s7, $t7
+and $s7, $s7, $t2
+bnez $s7, O11
+
+and $s7, $t6, $t8
+and $s7, $s7, $t9
+and $s7, $s7, $t2
+bnez $s7, O12
+
+and $s7, $t6, $t7
+and $s7, $s7, $t9
+and $s7, $s7, $t2
+bnez $s7, O31
+
+and $s7, $t4, $t8
+and $s7, $s7, $t9
+and $s7, $s7, $t2
+bnez $s7, O31
+
+and $s7, $t4, $t7
+and $s7, $s7, $t9
+and $s7, $s7, $t2
+bnez $s7, O31
+
+and $s7, $t4, $t6
+and $s7, $s7, $t1
+and $s7, $s7, $t2
+bnez $s7, O31
+
+and $s7, $t4, $t6
+and $s7, $s7, $t7
+and $s7, $s7, $t2
+bnez $s7, O33
+
+and $s7, $t3, $t8
+and $s7, $s7, $t4
+and $s7, $s7, $t2
+bnez $s7, O33
+
+and $s7, $t3, $t7
+and $s7, $s7, $t4
+and $s7, $s7, $t2
+bnez $s7, O33
+
+and $s7, $t3, $t4
+and $s7, $s7, $t9
+and $s7, $s7, $t2
+bnez $s7, O13
+
+and $s7, $t1, $t9
+and $s7, $s7, $t3
+and $s7, $s7, $t2
+bnez $s7, O12
+
+and $s7, $t1, $t6
+and $s7, $s7, $t7
+and $s7, $s7, $t2
+bnez $s7, O23
+
+and $s7, $t1, $t9
+and $s7, $s7, $t4
+and $s7, $s7, $t2
+bnez $s7, O31	
+##
+and $s7, $t5, $t9
+and $s7, $s7, $t2
+bnez $s7, O12
+
+and $s7, $t5, $t6
+and $s7, $s7, $t2
+bnez $s7, O13
+
+and $s7, $t5, $t3
+and $s7, $s7, $t2
+bnez $s7, O12
+
+and $s7, $t9, $t4
+and $s7, $s7, $t2
+bnez $s7, O31
+
+and $s7, $t7, $t8
+and $s7, $s7, $t2
+bnez $s7, O11
+
+and $s7, $t6, $t9
+and $s7, $s7, $t2
+bnez $s7, O13
+
+and $s7, $t6, $t8
+and $s7, $s7, $t2
+bnez $s7, O13
+
+and $s7, $t6, $t7
+and $s7, $s7, $t2
+bnez $s7, O11
+
+and $s7, $t6, $t4
+and $s7, $s7, $t2
+bnez $s7, O11
+
+and $s7, $t4, $t8
+and $s7, $s7, $t2
+bnez $s7, O33
+
+and $s7, $t4, $t7
+and $s7, $s7, $t2
+bnez $s7, O33
+
+and $s7, $t3, $t9
+and $s7, $s7, $t2
+bnez $s7, O12
+
+and $s7, $t3, $t8
+and $s7, $s7, $t2
+bnez $s7, O12
+
+and $s7, $t3, $t7
+and $s7, $s7, $t2
+bnez $s7, O12
+
+and $s7, $t3, $t6
+and $s7, $s7, $t2
+bnez $s7, O11
+
+and $s7, $t3, $t4
+and $s7, $s7, $t2
+bnez $s7, O33
+
+and $s7, $t1, $t4
+and $s7, $s7, $t2
+bnez $s7, O31
+
+and $s7, $t1, $t7
+and $s7, $s7, $t2
+bnez $s7, O32
+
+and $s7, $t1, $t8
+and $s7, $s7, $t2
+bnez $s7, O31
+
+and $s7, $t1, $t9
+and $s7, $s7, $t2
+bnez $s7, O12
+
+and $s7, $t1, $t6
+and $s7, $s7, $t2
+bnez $s7, O13
+#
+and $s7, $t5, $t2
+bnez $s7, O23
+
+and $s7, $t9, $t2
+bnez $s7, O31
+
+and $s7, $t7, $t2
+bnez $s7, O32
+
+and $s7, $t6, $t2
+bnez $s7, O31
+
+and $s7, $t4, $t2
+bnez $s7, O31
+
+and $s7, $t1, $t2
+bnez $s7, O31
+
+#$t3
+C31:
+beqz $t5,O22
+bnez $t5, C31A
+C31A:
+and $s7, $t5, $t9
+and $s7, $s7, $t4
+and $s7, $s7, $t3
+bnez $s7, O21
+
+and $s7, $t5, $t2
+and $s7, $s7, $t9
+and $s7, $s7, $t3
+bnez $s7, O12
+
+and $s7, $t5, $t2
+and $s7, $s7, $t6
+and $s7, $s7, $t3
+bnez $s7, O13
+
+and $s7, $t5, $t2
+and $s7, $s7, $t4
+and $s7, $s7, $t3
+bnez $s7, O13
+
+and $s7, $t8, $t4
+and $s7, $s7, $t9
+and $s7, $s7, $t3
+bnez $s7, O32
+
+and $s7, $t7, $t8
+and $s7, $s7, $t1
+and $s7, $s7, $t3
+bnez $s7, O32
+
+and $s7, $t6, $t7
+and $s7, $s7, $t8
+and $s7, $s7, $t3
+bnez $s7, O11
+
+and $s7, $t4, $t7
+and $s7, $s7, $t9
+and $s7, $s7, $t3
+bnez $s7, O21
+
+and $s7, $t6, $t1
+and $s7, $s7, $t4
+and $s7, $s7, $t3
+bnez $s7, O23
+
+and $s7, $t4, $t6
+and $s7, $s7, $t7
+and $s7, $s7, $t3
+bnez $s7, O21
+
+and $s7, $t2, $t7
+and $s7, $s7, $t4
+and $s7, $s7, $t3
+bnez $s7, O33
+
+and $s7, $t2, $t7
+and $s7, $s7, $t9
+and $s7, $s7, $t3
+bnez $s7, O32
+
+and $s7, $t2, $t7
+and $s7, $s7, $t6
+and $s7, $s7, $t3
+bnez $s7, O11
+
+and $s7, $t1, $t9
+and $s7, $s7, $t4
+and $s7, $s7, $t3
+bnez $s7, O21
+
+and $s7, $t1, $t7
+and $s7, $s7, $t6
+and $s7, $s7, $t3
+bnez $s7, O23
+
+##
+and $s7, $t5, $t9
+and $s7, $s7, $t3
+bnez $s7, O12
+
+and $s7, $t5, $t2
+and $s7, $s7, $t3
+bnez $s7, O13
+
+and $s7, $t8, $t4
+and $s7, $s7, $t3
+bnez $s7, O33
+
+and $s7, $t7, $t9
+and $s7, $s7, $t3
+bnez $s7, O21
+
+and $s7, $t7, $t8
+and $s7, $s7, $t3
+bnez $s7, O11
+
+and $s7, $t7, $t4
+and $s7, $s7, $t3
+bnez $s7, O33
+
+and $s7, $t6, $t7
+and $s7, $s7, $t3
+bnez $s7, O23
+
+and $s7, $t4, $t9
+and $s7, $s7, $t3
+bnez $s7, O21
+
+and $s7, $t4, $t6
+and $s7, $s7, $t3
+bnez $s7, O11
+
+and $s7, $t1, $t4
+and $s7, $s7, $t3
+bnez $s7, O21
+
+and $s7, $t1, $t8
+and $s7, $s7, $t3
+bnez $s7, O21
+
+and $s7, $t1, $t7
+and $s7, $s7, $t3
+bnez $s7, O32
+
+and $s7, $t2, $t7
+and $s7, $s7, $t3
+bnez $s7, O12
+
+and $s7, $t1, $t9
+and $s7, $s7, $t3
+bnez $s7, O12
+#
+and $s7, $t5, $t3
+bnez $s7, O13
+
+and $s7, $t7, $t3
+bnez $s7, O32
+
+and $s7, $t9, $t3
+bnez $s7, O32
+
+and $s7, $t8, $t3
+bnez $s7, O32
+
+and $s7, $t7, $t3
+bnez $s7, O21
+
+and $s7, $t6, $t3
+bnez $s7, O33
+
+and $s7, $t2, $t3
+bnez $s7, O11
+
+and $s7, $t1, $t3
+bnez $s7, O21
+
+#$t4
+C12:
+beqz $t5,O22
+bnez $t5,C12A
+C12A:
+and $s7, $t5, $t8
+and $s7, $s7, $t3
+and $s7, $s7, $t4
+bnez $s7, O32
+
+and $s7, $t5, $t2
+and $s7, $s7, $t9
+and $s7, $s7, $t4
+bnez $s7, O32
+
+and $s7, $t5, $t2
+and $s7, $s7, $t7
+and $s7, $s7, $t4
+bnez $s7, O32
+
+and $s7, $t5, $t2
+and $s7, $s7, $t3
+and $s7, $s7, $t4
+bnez $s7, O33
+
+and $s7, $t8, $t9
+and $s7, $s7, $t3
+and $s7, $s7, $t4
+bnez $s7, O11
+
+and $s7, $t6, $t9
+and $s7, $s7, $t7
+and $s7, $s7, $t4
+bnez $s7, O21
+
+and $s7, $t6, $t7
+and $s7, $s7, $t8
+and $s7, $s7, $t4
+bnez $s7, O11
+
+and $s7, $t6, $t7
+and $s7, $s7, $t9
+and $s7, $s7, $t4
+bnez $s7, O21
+
+and $s7, $t3, $t6
+and $s7, $s7, $t1
+and $s7, $s7, $t4
+bnez $s7, O23
+
+and $s7, $t1, $t9
+and $s7, $s7, $t3
+and $s7, $s7, $t4
+bnez $s7, O23
+
+and $s7, $t1, $t8
+and $s7, $s7, $t3
+and $s7, $s7, $t4
+bnez $s7, O33
+
+and $s7, $t2, $t9
+and $s7, $s7, $t7
+and $s7, $s7, $t4
+bnez $s7, O11
+
+and $s7, $t2, $t3
+and $s7, $s7, $t9
+and $s7, $s7, $t4
+bnez $s7, O13
+
+and $s7, $t2, $t6
+and $s7, $s7, $t7
+and $s7, $s7, $t4
+bnez $s7, O11
+
+and $s7, $t2, $t8
+and $s7, $s7, $t7
+and $s7, $s7, $t4
+bnez $s7, O32
+
+and $s7, $t2, $t7
+and $s7, $s7, $t9
+and $s7, $s7, $t4
+bnez $s7, O31
+
+##
+and $s7, $t5, $t2
+and $s7, $s7, $t4
+bnez $s7, O32
+
+and $s7, $t8, $t9
+and $s7, $s7, $t4
+bnez $s7, O31
+
+and $s7, $t7, $t9
+and $s7, $s7, $t4
+bnez $s7, O21
+
+and $s7, $t6, $t9
+and $s7, $s7, $t4
+bnez $s7, O13
+
+and $s7, $t6, $t8
+and $s7, $s7, $t4
+bnez $s7, O13
+
+and $s7, $t6, $t7
+and $s7, $s7, $t4
+bnez $s7, O23
+
+and $s7, $t3, $t9
+and $s7, $s7, $t4
+bnez $s7, O21
+
+and $s7, $t3, $t8
+and $s7, $s7, $t4
+bnez $s7, O11
+
+and $s7, $t3, $t7
+and $s7, $s7, $t4
+bnez $s7, O11
+
+and $s7, $t3, $t6
+and $s7, $s7, $t4
+bnez $s7, O11
+
+and $s7, $t1, $t9
+and $s7, $s7, $t4
+bnez $s7, O13
+
+and $s7, $t1, $t8
+and $s7, $s7, $t4
+bnez $s7, O31
+
+and $s7, $t1, $t8
+and $s7, $s7, $t4
+bnez $s7, O31
+
+and $s7, $t1, $t6
+and $s7, $s7, $t4
+bnez $s7, O13
+
+and $s7, $t1, $t3
+and $s7, $s7, $t4
+bnez $s7, O23
+
+and $s7, $t1, $t4
+and $s7, $s7, $t2
+bnez $s7, O13
+
+and $s7, $t2, $t6
+and $s7, $s7, $t4
+bnez $s7, O13
+
+and $s7, $t2, $t3
+and $s7, $s7, $t4
+bnez $s7, O33
+
+and $s7, $t2, $t8
+and $s7, $s7, $t4
+bnez $s7, O13
+
+and $s7, $t2, $t7
+and $s7, $s7, $t4
+bnez $s7, O11
+
+and $s7, $t2, $t9
+and $s7, $s7, $t4
+bnez $s7, O13
+
+and $s7, $t2, $t6
+and $s7, $s7, $t4
+bnez $s7, O13
+#
+and $s7, $t5, $t4
+bnez $s7, O32
+
+and $s7, $t9, $t4
+bnez $s7, O23
+
+and $s7, $t8, $t4
+bnez $s7, O11
+
+and $s7, $t7, $t4
+bnez $s7, O11
+
+and $s7, $t6, $t4
+bnez $s7, O33
+
+and $s7, $t3, $t4
+bnez $s7, O11
+
+and $s7, $t2, $t4
+bnez $s7, O31
+
+and $s7, $t1, $t4
+bnez $s7, O13
+
+#$t5
+C22:
+j O11
+
+
+#$t6
+C32:
+beqz $t5,O22
+bnez $t5, C32A
+C32A:
+and $s7, $t5, $t8
+and $s7, $s7, $t3
+and $s7, $s7, $t6
+bnez $s7, O12
+
+and $s7, $t5, $t2
+and $s7, $s7, $t7
+and $s7, $s7, $t6
+bnez $s7, O12
+
+and $s7, $t5, $t2
+and $s7, $s7, $t3
+and $s7, $s7, $t6
+bnez $s7, O12
+
+and $s7, $t9, $t4
+and $s7, $s7, $t2
+and $s7, $s7, $t6
+bnez $s7, O13
+
+and $s7, $t8, $t4
+and $s7, $s7, $t9
+and $s7, $s7, $t6
+bnez $s7, O31
+
+and $s7, $t7, $t8
+and $s7, $s7, $t1
+and $s7, $s7, $t6
+bnez $s7, O21
+
+and $s7, $t4, $t7
+and $s7, $s7, $t9
+and $s7, $s7, $t6
+bnez $s7, O21
+
+and $s7, $t1, $t9
+and $s7, $s7, $t3
+and $s7, $s7, $t6
+bnez $s7, O23
+
+and $s7, $t1, $t3
+and $s7, $s7, $t8
+and $s7, $s7, $t6
+bnez $s7, O33
+
+and $s7, $t1, $t4
+and $s7, $s7, $t3
+and $s7, $s7, $t6
+bnez $s7, O23
+
+and $s7, $t2, $t9
+and $s7, $s7, $t7
+and $s7, $s7, $t6
+bnez $s7, O11
+
+and $s7, $t1, $t2
+and $s7, $s7, $t7
+and $s7, $s7, $t6
+bnez $s7, O33
+
+and $s7, $t2, $t8
+and $s7, $s7, $t7
+and $s7, $s7, $t6
+bnez $s7, O11
+
+and $s7, $t2, $t7
+and $s7, $s7, $t9
+and $s7, $s7, $t6
+bnez $s7, O31
+
+and $s7, $t2, $t4
+and $s7, $s7, $t7
+and $s7, $s7, $t6
+bnez $s7, O33
+
+##
+and $s7, $t5, $t2
+and $s7, $s7, $t6
+bnez $s7, O12
+
+and $s7, $t7, $t9
+and $s7, $s7, $t6
+bnez $s7, O21
+
+and $s7, $t7, $t8
+and $s7, $s7, $t6
+bnez $s7, O11
+
+and $s7, $t4, $t9
+and $s7, $s7, $t6
+bnez $s7, O21
+
+and $s7, $t4, $t7
+and $s7, $s7, $t6
+bnez $s7, O33
+
+and $s7, $t3, $t8
+and $s7, $s7, $t6
+bnez $s7, O11
+
+and $s7, $t3, $t4
+and $s7, $s7, $t6
+bnez $s7, O33
+
+and $s7, $t1, $t4
+and $s7, $s7, $t6
+bnez $s7, O31
+
+and $s7, $t1, $t7
+and $s7, $s7, $t6
+bnez $s7, O31
+
+and $s7, $t1, $t8
+and $s7, $s7, $t6
+bnez $s7, O31
+
+and $s7, $t1, $t9
+and $s7, $s7, $t6
+bnez $s7, O31
+
+and $s7, $t1, $t3
+and $s7, $s7, $t6
+bnez $s7, O23
+
+and $s7, $t1, $t2
+and $s7, $s7, $t6
+bnez $s7, O13
+
+and $s7, $t2, $t7
+and $s7, $s7, $t6
+bnez $s7, O33
+
+and $s7, $t2, $t8
+and $s7, $s7, $t6
+bnez $s7, O13
+
+and $s7, $t2, $t9
+and $s7, $s7, $t6
+bnez $s7, O13
+
+and $s7, $t2, $t3
+and $s7, $s7, $t6
+bnez $s7, O33
+
+and $s7, $t2, $t4
+and $s7, $s7, $t6
+bnez $s7, O13
+
+#
+and $s7, $t5, $t6
+bnez $s7, O12
+
+and $s7, $t9, $t6
+bnez $s7, O31
+
+and $s7, $t8, $t6
+bnez $s7, O31
+
+and $s7, $t7, $t6
+bnez $s7, O21
+
+and $s7, $t4, $t6
+bnez $s7, O33
+
+and $s7, $t3, $t6
+bnez $s7, O33
+
+and $s7, $t2, $t6
+bnez $s7, O31
+
+and $s7, $t1, $t6
+bnez $s7, O31
+
+#$t7
+C13:
+beqz $t5,O22
+bnez $t5,C13A
+C13A:
+and $s7, $t5, $t2
+and $s7, $s7, $t6
+and $s7, $s7, $t7
+bnez $s7, O31
+
+and $s7, $t5, $t2
+and $s7, $s7, $t4
+and $s7, $s7, $t7
+bnez $s7, O31
+
+and $s7, $t4, $t9
+and $s7, $s7, $t2
+and $s7, $s7, $t7
+bnez $s7, O11
+
+and $s7, $t3, $t9
+and $s7, $s7, $t4
+and $s7, $s7, $t7
+bnez $s7, O23
+
+and $s7, $t3, $t8
+and $s7, $s7, $t4
+and $s7, $s7, $t7
+bnez $s7, O33
+
+and $s7, $t3, $t6
+and $s7, $s7, $t1
+and $s7, $s7, $t7
+bnez $s7, O23
+
+and $s7, $t1, $t3
+and $s7, $s7, $t8
+and $s7, $s7, $t7
+bnez $s7, O32
+
+and $s7, $t2, $t3
+and $s7, $s7, $t9
+and $s7, $s7, $t7
+bnez $s7, O12
+
+and $s7, $t3, $t4
+and $s7, $s7, $t9
+and $s7, $s7, $t7
+bnez $s7, O23
+
+##
+and $s7, $t5, $t2
+and $s7, $s7, $t7
+bnez $s7, O31
+
+and $s7, $t6, $t9
+and $s7, $s7, $t7
+bnez $s7, O23
+
+and $s7, $t6, $t8
+and $s7, $s7, $t7
+bnez $s7, O33
+
+and $s7, $t4, $t9
+and $s7, $s7, $t7
+bnez $s7, O21
+
+and $s7, $t6, $t4
+and $s7, $s7, $t7
+bnez $s7, O11
+
+and $s7, $t3, $t9
+and $s7, $s7, $t7
+bnez $s7, O12
+
+and $s7, $t3, $t8
+and $s7, $s7, $t7
+bnez $s7, O12
+
+and $s7, $t3, $t6
+and $s7, $s7, $t7
+bnez $s7, O11
+
+and $s7, $t3, $t4
+and $s7, $s7, $t7
+bnez $s7, O33
+
+and $s7, $t1, $t9
+and $s7, $s7, $t7
+bnez $s7, O12
+
+and $s7, $t1, $t2
+and $s7, $s7, $t7
+bnez $s7, O12
+
+and $s7, $t1, $t6
+and $s7, $s7, $t7
+bnez $s7, O12
+
+and $s7, $t1, $t3
+and $s7, $s7, $t7
+bnez $s7, O23
+
+and $s7, $t1, $t4
+and $s7, $s7, $t7
+bnez $s7, O12
+
+and $s7, $t2, $t3
+and $s7, $s7, $t7
+bnez $s7, O33
+
+and $s7, $t2, $t8
+and $s7, $s7, $t7
+bnez $s7, O33
+
+and $s7, $t2, $t9
+and $s7, $s7, $t7
+bnez $s7, O23
+
+and $s7, $t2, $t6
+and $s7, $s7, $t7
+bnez $s7, O33
+
+and $s7, $t2, $t4
+and $s7, $s7, $t7
+bnez $s7, O11
+#
+and $s7, $t5, $t7
+bnez $s7, O31
+
+and $s7, $t9, $t7
+bnez $s7, O23
+
+and $s7, $t6, $t7
+bnez $s7, O21
+
+and $s7, $t8, $t7
+bnez $s7, O33
+
+and $s7, $t4, $t7
+bnez $s7, O11
+
+and $s7, $t3, $t7
+bnez $s7, O32
+
+and $s7, $t2, $t7
+bnez $s7, O32
+
+and $s7, $t1, $t7
+bnez $s7, O12
+
+#$t8
+C23:
+beqz $t5,O22
+bnez $t5, C23A
+C23A:
+##
+and $s7, $t5, $t9
+and $s7, $s7, $t4
+and $s7, $s7, $t8
+bnez $s7, O21
+
+and $s7, $t5, $t6
+and $s7, $s7, $t7
+and $s7, $s7, $t8
+bnez $s7, O21
+
+and $s7, $t5, $t3
+and $s7, $s7, $t4
+and $s7, $s7, $t8
+bnez $s7, O21
+
+and $s7, $t4, $t6
+and $s7, $s7, $t1
+and $s7, $s7, $t8
+bnez $s7, O31
+
+and $s7, $t3, $t9
+and $s7, $s7, $t4
+and $s7, $s7, $t8
+bnez $s7, O13
+
+and $s7, $t3, $t7
+and $s7, $s7, $t4
+and $s7, $s7, $t8
+bnez $s7, O33
+
+and $s7, $t3, $t6
+and $s7, $s7, $t1
+and $s7, $s7, $t8
+bnez $s7, O12
+
+and $s7, $t3, $t4
+and $s7, $s7, $t9
+and $s7, $s7, $t8
+bnez $s7, O13
+
+and $s7, $t2, $t7
+and $s7, $s7, $t4
+and $s7, $s7, $t8
+bnez $s7, O33
+
+and $s7, $t1, $t9
+and $s7, $s7, $t3
+and $s7, $s7, $t8
+bnez $s7, O32
+
+and $s7, $t2, $t7
+and $s7, $s7, $t6
+and $s7, $s7, $t8
+bnez $s7, O11
+
+and $s7, $t1, $t6
+and $s7, $s7, $t7
+and $s7, $s7, $t8
+bnez $s7, O33
+
+
+and $s7, $t1, $t3
+and $s7, $s7, $t8
+and $s7, $s7, $t6
+bnez $s7, O33
+
+and $s7, $t1, $t2
+and $s7, $s7, $t7
+and $s7, $s7, $t8
+bnez $s7, O32
+
+and $s7, $t1, $t9
+and $s7, $s7, $t4
+and $s7, $s7, $t8
+bnez $s7, O31
+
+and $s7, $t1, $t4
+and $s7, $s7, $t3
+and $s7, $s7, $t8
+bnez $s7, O33
+
+and $s7, $t2, $t3
+and $s7, $s7, $t9
+and $s7, $s7, $t8
+bnez $s7, O12
+
+and $s7, $t2, $t6
+and $s7, $s7, $t7
+and $s7, $s7, $t8
+bnez $s7, O33
+
+and $s7, $t2, $t4
+and $s7, $s7, $t7
+and $s7, $s7, $t8
+bnez $s7, O33
+#
+and $s7, $t5, $t9
+and $s7, $s7, $t8
+bnez $s7, O12
+
+and $s7, $t5, $t6
+and $s7, $s7, $t8
+bnez $s7, O13
+
+and $s7, $t5, $t3
+and $s7, $s7, $t8
+bnez $s7, O12
+
+and $s7, $t9, $t4
+and $s7, $s7, $t8
+bnez $s7, O31
+
+and $s7, $t6, $t9
+and $s7, $s7, $t8
+bnez $s7, O13
+
+and $s7, $t6, $t7
+and $s7, $s7, $t8
+bnez $s7, O33
+
+and $s7, $t3, $t9
+and $s7, $s7, $t8
+bnez $s7, O12
+
+and $s7, $t3, $t7
+and $s7, $s7, $t8
+bnez $s7, O12
+
+and $s7, $t3, $t6
+and $s7, $s7, $t8
+bnez $s7, O11
+
+and $s7, $t3, $t4
+and $s7, $s7, $t8
+bnez $s7, O33
+
+and $s7, $t1, $t4
+and $s7, $s7, $t8
+bnez $s7, O31
+
+and $s7, $t1, $t7
+and $s7, $s7, $t8
+bnez $s7, O32
+
+and $s7, $t1, $t9
+and $s7, $s7, $t8
+bnez $s7, O12
+
+and $s7, $t1, $t6
+and $s7, $s7, $t8
+bnez $s7, O13
+
+and $s7, $t1, $t3
+and $s7, $s7, $t8
+bnez $s7, O12
+
+and $s7, $t1, $t2
+and $s7, $s7, $t8
+bnez $s7, O13
+
+and $s7, $t2, $t3
+and $s7, $s7, $t8
+bnez $s7, O33
+
+and $s7, $t2, $t7
+and $s7, $s7, $t8
+bnez $s7, O12
+
+and $s7, $t2, $t9
+and $s7, $s7, $t8
+bnez $s7, O13
+
+and $s7, $t2, $t6
+and $s7, $s7, $t8
+bnez $s7, O13
+
+and $s7, $t2, $t4
+and $s7, $s7, $t8
+bnez $s7, O13
+#
+and $s7, $t5, $t8
+bnez $s7, O21
+
+and $s7, $t9, $t8
+bnez $s7, O13
+
+and $s7, $t7, $t8
+bnez $s7, O33
+
+and $s7, $t6, $t8
+bnez $s7, O31
+
+and $s7, $t4, $t8
+bnez $s7, O11
+
+and $s7, $t3, $t8
+bnez $s7, O32
+
+and $s7, $t2, $t8
+bnez $s7, O31
+
+and $s7, $t1, $t8
+bnez $s7, O13
+
+#$t9
+C33:  
+beqz $t5,O22
+bnez $t5, C33A
+
+C33A:
+##
+and $s7, $t5, $t4
+and $s7, $s7, $t7
+and $s7, $s7, $t9
+bnez $s7, O21
+
+and $s7, $t5, $t3
+and $s7, $s7, $t4
+and $s7, $s7, $t9
+bnez $s7, O23
+
+and $s7, $t5, $t2
+and $s7, $s7, $t7
+and $s7, $s7, $t9
+bnez $s7, O12
+
+and $s7, $t5, $t2
+and $s7, $s7, $t6
+and $s7, $s7, $t9
+bnez $s7, O13
+
+and $s7, $t5, $t2
+and $s7, $s7, $t4
+and $s7, $s7, $t9
+bnez $s7, O13
+
+and $s7, $t5, $t2
+and $s7, $s7, $t3
+and $s7, $s7, $t9
+bnez $s7, O12
+
+and $s7, $t6, $t4
+and $s7, $s7, $t2
+and $s7, $s7, $t9
+bnez $s7, O13
+
+and $s7, $t6, $t1
+and $s7, $s7, $t4
+and $s7, $s7, $t9
+bnez $s7, O23
+
+and $s7, $t4, $t6
+and $s7, $s7, $t7
+and $s7, $s7, $t9
+bnez $s7, O21
+
+and $s7, $t3, $t8
+and $s7, $s7, $t4
+and $s7, $s7, $t9
+bnez $s7, O13
+
+and $s7, $t3, $t7
+and $s7, $s7, $t4
+and $s7, $s7, $t9
+bnez $s7, O23
+
+and $s7, $t1, $t6
+and $s7, $s7, $t7
+and $s7, $s7, $t9
+bnez $s7, O23
+
+and $s7, $t1, $t3
+and $s7, $s7, $t8
+and $s7, $s7, $t9
+bnez $s7, O32
+
+and $s7, $t1, $t2
+and $s7, $s7, $t7
+and $s7, $s7, $t9
+bnez $s7, O32
+
+and $s7, $t1, $t4
+and $s7, $s7, $t3
+and $s7, $s7, $t9
+bnez $s7, O23
+
+and $s7, $t2, $t6
+and $s7, $s7, $t7
+and $s7, $s7, $t9
+bnez $s7, O23
+
+and $s7, $t2, $t4
+and $s7, $s7, $t7
+and $s7, $s7, $t9
+bnez $s7, O23
+#
+and $s7, $t5, $t7
+and $s7, $s7, $t9
+bnez $s7, O23
+
+and $s7, $t5, $t3
+and $s7, $s7, $t9
+bnez $s7, O12
+
+and $s7, $t5, $t2
+and $s7, $s7, $t9
+bnez $s7, O13
+
+and $s7, $t6, $t8
+and $s7, $s7, $t9
+bnez $s7, O13
+
+and $s7, $t6, $t7
+and $s7, $s7, $t9
+bnez $s7, O23
+
+and $s7, $t4, $t6
+and $s7, $s7, $t9
+bnez $s7, O21
+
+and $s7, $t3, $t8
+and $s7, $s7, $t9
+bnez $s7, O12
+
+and $s7, $t3, $t7
+and $s7, $s7, $t9
+bnez $s7, O12
+
+and $s7, $t3, $t4
+and $s7, $s7, $t9
+bnez $s7, O32
+
+and $s7, $t1, $t7
+and $s7, $s7, $t9
+bnez $s7, O32
+
+and $s7, $t1, $t8
+and $s7, $s7, $t9
+bnez $s7, O31
+
+and $s7, $t1, $t9
+and $s7, $s7, $t4
+bnez $s7, O31
+
+and $s7, $t1, $t6
+and $s7, $s7, $t9
+bnez $s7, O13
+
+and $s7, $t1, $t3
+and $s7, $s7, $t9
+bnez $s7, O23
+
+and $s7, $t1, $t2
+and $s7, $s7, $t9
+bnez $s7, O13
+
+and $s7, $t2, $t6
+and $s7, $s7, $t9
+bnez $s7, O13
+
+and $s7, $t2, $t7
+and $s7, $s7, $t9
+bnez $s7, O12
+
+and $s7, $t2, $t8
+and $s7, $s7, $t9
+bnez $s7, O13
+
+and $s7, $t2, $t3
+and $s7, $s7, $t9
+bnez $s7, O32
+
+and $s7, $t2, $t4
+and $s7, $s7, $t9
+bnez $s7, O13
+#
+and $s7, $t5, $t9
+bnez $s7, O13
+
+and $s7, $t8, $t9
+bnez $s7, O13
+
+and $s7, $t7, $t9
+bnez $s7, O23
+
+and $s7, $t6, $t9
+bnez $s7, O31
+
+and $s7, $t4, $t9
+bnez $s7,O23
+
+and $s7, $t3, $t9
+bnez $s7,O32
+
+and $s7, $t2, $t9
+bnez $s7,O31
+
+and $s7, $t1, $t9
+bnez $s7, O32
+
+.data
+			
+			tablero: .asciiz "  1   2   3\n1   |   |   \n ---+---+---\n2   |   |   \n ---+---+---\n3   |   |   \n"
+			
+			pedirMovimiento: .asciiz "Jugador   ingrese movimiento (columna/fila):"
+
+			movInvalido: .asciiz "**Movimiento Invalido**"
+
+			espacioOcupado: .asciiz "**Celda ocupada **\n"
+			
+			x: .asciiz "X"
+			
+			o: .asciiz "O"
+			
+			gano: .asciiz "\nJugador   gano! \n"
+
+			empate: .asciiz  "\nEmpate!!!"
+			#es .byte ya que esto me permite poner en una posicion determinada de una cadena, el caracter de mi decicion. En este caso es ' ' para limpiar el tablero (reemplazar las x o los O con un espacio)
+			cls: .byte ' '
+
+			menu : .asciiz "Bienvenido, seleccione su opcion: \n[1]2 jugadores \n[2] vs cpu\n[3] salir\n"
+
+			salto: .asciiz "\n"
+			
+			turnoCPU: .asciiz "TurnoCPU\n\n"
+			
+			adios: .asciiz "Adios "
+			
